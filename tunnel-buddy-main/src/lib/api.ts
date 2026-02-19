@@ -421,7 +421,7 @@ export function connectRealtime(onEvent: (event: any) => void): WebSocket | null
   const token = getToken();
   if (!token) return null;
 
-  const wsBase = API_BASE.replace(/^http/, 'ws') || `ws://${window.location.host}`;
+  const wsBase = API_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws') || `wss://${window.location.host}`;
   const ws = new WebSocket(`${wsBase}/ws/realtime?token=${token}`);
 
   ws.onmessage = (e) => {
