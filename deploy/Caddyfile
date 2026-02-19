@@ -1,0 +1,12 @@
+# UltraSlim Caddy Configuration
+# Main dashboard gets auto HTTPS from Caddy
+# Tunnel subdomains are handled via a separate port listener
+
+tunnel.networkershome.com {
+    reverse_proxy localhost:8080
+}
+
+# Tunnel subdomains - use HTTP only (Cloudflare Flexible SSL handles HTTPS)
+http://*.tunnel.networkershome.com {
+    reverse_proxy localhost:8081
+}

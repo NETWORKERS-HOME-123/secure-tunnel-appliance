@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment / secrets
+.env
+.env.*
+*.local
+
+# Logs
+logs/
+*.log
+
+# Deploy artifacts (logs, test output, temp scripts)
+deploy/*.log
+deploy/*.json
+deploy/body_check.txt
+deploy/all-sources-b64.sh
+deploy/write-backend.py
+deploy/upload-backtick-files.sh
+deploy/create-backend.py
+deploy/svc.log
+
+# Go binaries
+backend/ultraslim-server
+backend/ultraslim
+*.exe
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+
+# Lock files (bun)
+bun.lockb

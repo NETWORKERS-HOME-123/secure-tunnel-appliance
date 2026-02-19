@@ -1,0 +1,179 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - postgresql
+  - postgresql-contrib
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
+  - curl
+  - git
+  - ufw
+  - fail2ban
+  - unzip
+
+write_files:
+  - path: /opt/ultraslim/setup.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      exec > /var/log/ultraslim-setup.log 2>&1
+
+      echo "=== UltraSlim Setup Started $(date) ==="
+
+      # ── 1. Install Go 1.22 ──────────────────────────────
+      echo "Installing Go..."
+      curl -fsSL https://go.dev/dl/go1.22.10.linux-amd64.tar.gz -o /tmp/go.tar.gz
+      rm -rf /usr/local/go
+      tar -C /usr/local -xzf /tmp/go.tar.gz
+      export PATH=$PATH:/usr/local/go/bin
+      echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile.d/golang.sh
+      go version
+
+      # ── 2. Install Caddy ────────────────────────────────
+      echo "Installing Caddy..."
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+      apt-get update
+      apt-get install -y caddy
+
+      # ── 3. Install Node.js 20 ───────────────────────────
+      echo "Installing Node.js..."
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get install -y nodejs
+      node --version
+      npm --version
+
+      # ── 4. Setup PostgreSQL ─────────────────────────────
+      echo "Setting up PostgreSQL..."
+      systemctl enable postgresql
+      systemctl start postgresql
+
+      sudo -u postgres psql -c "CREATE USER ultraslim WITH PASSWORD 'ultraslim_db_pass_2026';" || true
+      sudo -u postgres psql -c "CREATE DATABASE ultraslim OWNER ultraslim;" || true
+      sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ultraslim TO ultraslim;" || true
+
+      # ── 5. Create ultraslim user ────────────────────────
+      echo "Creating ultraslim user..."
+      useradd -r -m -d /opt/ultraslim -s /bin/bash ultraslim || true
+      mkdir -p /opt/ultraslim/bin /opt/ultraslim/frontend /opt/ultraslim/backend
+
+      # ── 6. Copy and build backend ───────────────────────
+      echo "Building backend..."
+      cd /opt/ultraslim/backend
+
+      # Copy backend source (placed by cloud-init file writes below or git clone)
+      if [ -d "/opt/ultraslim/src/backend" ]; then
+        cp -r /opt/ultraslim/src/backend/* /opt/ultraslim/backend/
+      fi
+
+      export GOPATH=/opt/ultraslim/go
+      export GOCACHE=/opt/ultraslim/.cache/go-build
+      mkdir -p $GOPATH $GOCACHE
+
+      cd /opt/ultraslim/backend
+      go build -o /opt/ultraslim/bin/ultraslim-server ./cmd/server
+      go build -o /opt/ultraslim/bin/ultraslim ./cmd/cli
+
+      echo "Backend built successfully"
+
+      # ── 7. Build frontend ───────────────────────────────
+      echo "Building frontend..."
+      cd /opt/ultraslim/frontend
+
+      if [ -d "/opt/ultraslim/src/tunnel-buddy-main" ]; then
+        cp -r /opt/ultraslim/src/tunnel-buddy-main/* /opt/ultraslim/frontend/
+      fi
+
+      # Set API URL for production build
+      echo 'VITE_API_URL=' > .env.production
+
+      npm ci --production=false
+      npm run build
+
+      # Copy build output to where the Go server expects it
+      mkdir -p /opt/ultraslim/bin/static
+      cp -r dist/* /opt/ultraslim/bin/static/
+
+      echo "Frontend built successfully"
+
+      # ── 8. Setup Caddy ──────────────────────────────────
+      echo "Configuring Caddy..."
+      cat > /etc/caddy/Caddyfile << 'CADDYEOF'
+      tunnel.networkershome.com {
+          reverse_proxy localhost:8080
+      }
+
+      *.tunnel.networkershome.com {
+          reverse_proxy localhost:8081
+      }
+      CADDYEOF
+
+      # ── 9. Setup systemd service ────────────────────────
+      echo "Setting up systemd service..."
+      cat > /etc/systemd/system/ultraslim.service << 'SVCEOF'
+      [Unit]
+      Description=UltraSlim Tunnel Relay Server
+      After=network.target postgresql.service
+      Requires=postgresql.service
+
+      [Service]
+      Type=simple
+      User=ultraslim
+      Group=ultraslim
+      WorkingDirectory=/opt/ultraslim/bin
+      ExecStart=/opt/ultraslim/bin/ultraslim-server
+      Restart=always
+      RestartSec=5
+      LimitNOFILE=65536
+      Environment=PORT=8080
+      Environment=DATABASE_URL=postgres://ultraslim:ultraslim_db_pass_2026@localhost:5432/ultraslim?sslmode=disable
+      Environment=JWT_SECRET=ultraslim_jwt_secret_k8s9f7g2h4j6m1n3p5q8r0t
+      Environment=DOMAIN=tunnel.networkershome.com
+      Environment=TCP_PORT_MIN=10000
+      Environment=TCP_PORT_MAX=20000
+      StandardOutput=journal
+      StandardError=journal
+      SyslogIdentifier=ultraslim
+
+      [Install]
+      WantedBy=multi-user.target
+      SVCEOF
+
+      # ── 10. Set permissions ─────────────────────────────
+      chown -R ultraslim:ultraslim /opt/ultraslim
+
+      # ── 11. Configure firewall ──────────────────────────
+      echo "Configuring firewall..."
+      ufw --force reset
+      ufw default deny incoming
+      ufw default allow outgoing
+      ufw allow 22/tcp
+      ufw allow 80/tcp
+      ufw allow 443/tcp
+      ufw allow 8080/tcp
+      ufw allow 10000:20000/tcp
+      ufw --force enable
+
+      # ── 12. Start services ─────────────────────────────
+      echo "Starting services..."
+      systemctl daemon-reload
+      systemctl enable ultraslim
+      systemctl start ultraslim
+      systemctl enable caddy
+      systemctl restart caddy
+
+      # ── 13. Configure fail2ban ──────────────────────────
+      systemctl enable fail2ban
+      systemctl start fail2ban
+
+      echo "=== UltraSlim Setup Complete $(date) ==="
+      echo "Dashboard: https://tunnel.networkershome.com"
+      echo "Default admin: admin@ultraslim.dev / UltraSlim@2026!"
+
+runcmd:
+  - bash /opt/ultraslim/setup.sh

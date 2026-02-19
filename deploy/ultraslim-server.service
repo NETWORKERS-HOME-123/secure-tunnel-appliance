@@ -1,0 +1,37 @@
+[Unit]
+Description=UltraSlim Tunnel Relay Server
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=ultraslim
+Group=ultraslim
+WorkingDirectory=/opt/ultraslim/bin
+ExecStart=/opt/ultraslim/bin/ultraslim-server
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# Environment
+Environment=PORT=8080
+Environment=DATABASE_URL=postgres://ultraslim:ultraslim_db_pass_2026@localhost:5432/ultraslim?sslmode=disable
+Environment=JWT_SECRET=ultraslim_jwt_secret_k8s9f7g2h4j6m1n3p5q8r0t
+Environment=DOMAIN=tunnel.networkershome.com
+Environment=TCP_PORT_MIN=10000
+Environment=TCP_PORT_MAX=20000
+Environment=GIN_MODE=release
+
+# Security
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/ultraslim
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ultraslim
+
+[Install]
+WantedBy=multi-user.target

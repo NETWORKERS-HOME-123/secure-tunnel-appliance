@@ -1,0 +1,1 @@
+ALTER TYPE public.tunnel_type ADD VALUE IF NOT EXISTS 'ssh';
