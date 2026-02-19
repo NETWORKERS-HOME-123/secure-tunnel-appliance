@@ -2,20 +2,26 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/ultraslim/server/internal/api"
 	"github.com/ultraslim/server/internal/auth"
+	"github.com/ultraslim/server/internal/circuitbreaker"
 	"github.com/ultraslim/server/internal/config"
 	"github.com/ultraslim/server/internal/db"
 	"github.com/ultraslim/server/internal/middleware"
+	"github.com/ultraslim/server/internal/monitoring"
 	"github.com/ultraslim/server/internal/relay"
+	"github.com/ultraslim/server/internal/ratelimit"
+	"github.com/ultraslim/server/internal/tuning"
 )
 
 func main() {
@@ -36,6 +42,45 @@ func main() {
 
 	// Create default superadmin if none exists
 	createDefaultSuperadmin()
+
+	// ── Phase 2: Initialize monitoring and alerting ────────
+	metrics := monitoring.NewMetrics()
+	alertMgr := monitoring.NewAlertManager(metrics)
+	alertMgr.AddHandler(monitoring.DefaultLogHandler)
+
+	// Add alert rules for critical metrics
+	alertMgr.AddRule(&monitoring.AlertRule{
+		Name:      "High Database Connection Usage",
+		Metric:    "db_connection_pool_utilization",
+		Condition: "greater_than",
+		Threshold: 0.9,
+		Duration:  1 * time.Minute,
+		Level:     monitoring.Critical,
+	})
+
+	alertMgr.AddRule(&monitoring.AlertRule{
+		Name:      "High Error Rate",
+		Metric:    "api_error_rate",
+		Condition: "greater_than",
+		Threshold: 0.05,
+		Duration:  2 * time.Minute,
+		Level:     monitoring.Warning,
+	})
+
+	// ── Phase 2: Initialize circuit breakers ──────────────
+	dbCircuitBreaker := circuitbreaker.NewCircuitBreaker(5, 30*time.Second)
+	cacheCircuitBreaker := circuitbreaker.NewCircuitBreaker(3, 20*time.Second)
+
+	// ── Phase 2: Initialize connection tuning ──────────────
+	connTuner := tuning.NewConnectionTuner(tuning.DefaultConnectionConfig())
+	poolMonitor := tuning.NewConnectionPoolMonitor(50)
+
+	// ── Phase 2: Initialize advanced rate limiting ────────
+	advancedRateLimiter := ratelimit.NewDynamicRateLimiter(10.0/60, 5)
+	adaptiveRateLimiter := ratelimit.NewAdaptiveCircuitBreakerRateLimiter(5.0/60, 3)
+
+	// Start background monitoring goroutine
+	go startMonitoringLoop(metrics, alertMgr, dbCircuitBreaker)
 
 	// Init relay hub
 	hub := relay.NewHub(cfg.TunnelDomain, cfg.TCPPortMin, cfg.TCPPortMax)
@@ -100,6 +145,37 @@ func main() {
 
 	// Config export
 	mux.Handle("GET /api/config/export", middleware.AuthMiddleware(http.HandlerFunc(api.HandleExportConfig)))
+
+	// ── Phase 2: Monitoring endpoints ────────────────────
+	mux.HandleFunc("GET /api/metrics", func(w http.ResponseWriter, r *http.Request) {
+		metrics.IncrementCounter("api_metrics_requests", nil)
+		w.Header().Set("Content-Type", "application/json")
+		metricsData := metrics.GetAllMetrics()
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"metrics":  metricsData,
+			"timestamp": time.Now(),
+		})
+	})
+
+	mux.HandleFunc("GET /api/alerts", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		alerts := alertMgr.GetAlerts()
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"active_alerts": len(alerts),
+			"alerts":        alerts,
+			"timestamp":     time.Now(),
+		})
+	})
+
+	mux.HandleFunc("GET /api/circuit-breaker/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"database":     dbCircuitBreaker.GetStats(),
+			"cache":        cacheCircuitBreaker.GetStats(),
+			"connection_pool": poolMonitor.GetStats(),
+			"timestamp":    time.Now(),
+		})
+	})
 
 	// ── Admin routes (superadmin only) ───────────────────
 	mux.Handle("GET /api/admin/users", middleware.AuthMiddleware(middleware.SuperadminMiddleware(http.HandlerFunc(api.HandleAdminGetUsers))))
@@ -182,6 +258,30 @@ func main() {
 	}
 
 	log.Println("[server] Shutdown complete")
+}
+
+// startMonitoringLoop runs background monitoring and alerting
+func startMonitoringLoop(metrics *monitoring.Metrics, alertMgr *monitoring.AlertManager, dbCircuitBreaker *circuitbreaker.CircuitBreaker) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// Record a heartbeat metric
+		metrics.SetGauge("system_heartbeat", 1, nil)
+
+		// Evaluate alert rules
+		alertMgr.EvaluateRules()
+
+		// Log periodic stats
+		dbStats := dbCircuitBreaker.GetStats()
+		log.Printf("[monitoring] Circuit breaker stats: %v", dbStats)
+
+		// Check for critical alerts
+		alerts := alertMgr.GetAlerts()
+		if len(alerts) > 0 {
+			log.Printf("[monitoring] Active alerts: %d", len(alerts))
+		}
+	}
 }
 
 func createDefaultSuperadmin() {
