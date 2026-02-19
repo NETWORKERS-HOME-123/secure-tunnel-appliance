@@ -3,9 +3,12 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 
 	"github.com/ultraslim/server/internal/auth"
+	"golang.org/x/time/rate"
 )
 
 type contextKey string
@@ -46,8 +49,21 @@ func GetClaims(r *http.Request) *auth.Claims {
 }
 
 func CORSMiddleware(next http.Handler) http.Handler {
+	// Parse allowed origins from environment or use default
+	allowedOriginsStr := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOriginsStr == "" {
+		allowedOriginsStr = "https://tunnel.networkershome.com"
+	}
+	allowedOrigins := make(map[string]bool)
+	for _, origin := range strings.Split(allowedOriginsStr, ",") {
+		allowedOrigins[strings.TrimSpace(origin)] = true
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Max-Age", "86400")
@@ -77,4 +93,38 @@ func SuperadminMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// RateLimitMiddleware creates a per-IP rate limiter middleware
+func RateLimitMiddleware(rps float64, burst int) func(http.Handler) http.Handler {
+	limiters := &sync.Map{} // map[string]*rate.Limiter
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Get client IP
+			clientIP := r.RemoteAddr
+			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+				clientIP = strings.Split(xff, ",")[0]
+			}
+
+			// Get or create limiter for this IP
+			var limiter *rate.Limiter
+			if v, ok := limiters.Load(clientIP); ok {
+				limiter = v.(*rate.Limiter)
+			} else {
+				limiter = rate.NewLimiter(rate.Limit(rps), burst)
+				limiters.Store(clientIP, limiter)
+			}
+
+			// Check rate limit
+			if !limiter.Allow() {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+				w.Write([]byte(`{"error":"rate limit exceeded"}`))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

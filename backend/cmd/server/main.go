@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/ultraslim/server/internal/api"
 	"github.com/ultraslim/server/internal/auth"
@@ -39,15 +43,21 @@ func main() {
 	// Build router
 	mux := http.NewServeMux()
 
+	// Create rate limiters for different endpoints
+	loginLimiter := middleware.RateLimitMiddleware(10.0/60, 5)      // 10 per minute, burst 5
+	signupLimiter := middleware.RateLimitMiddleware(5.0/60, 3)      // 5 per minute, burst 3
+	pwdLimiter := middleware.RateLimitMiddleware(3.0/3600, 2)       // 3 per hour, burst 2
+	agentLimiter := middleware.RateLimitMiddleware(20.0/60, 5)      // 20 per minute, burst 5
+
 	// ── Public routes ────────────────────────────────────
-	mux.HandleFunc("POST /api/auth/signup", api.HandleSignup)
-	mux.HandleFunc("POST /api/auth/login", api.HandleLogin)
-	mux.HandleFunc("POST /api/auth/forgot-password", api.HandleForgotPassword)
-	mux.HandleFunc("POST /api/auth/reset-password", api.HandleResetPassword)
+	mux.Handle("POST /api/auth/signup", signupLimiter(http.HandlerFunc(api.HandleSignup)))
+	mux.Handle("POST /api/auth/login", loginLimiter(http.HandlerFunc(api.HandleLogin)))
+	mux.Handle("POST /api/auth/forgot-password", pwdLimiter(http.HandlerFunc(api.HandleForgotPassword)))
+	mux.Handle("POST /api/auth/reset-password", pwdLimiter(http.HandlerFunc(api.HandleResetPassword)))
 	mux.HandleFunc("GET /api/health", api.HandleSystemHealth)
 
 	// ── Agent WebSocket ──────────────────────────────────
-	mux.HandleFunc("GET /ws/agent", hub.HandleAgentConnect)
+	mux.Handle("GET /ws/agent", agentLimiter(http.HandlerFunc(hub.HandleAgentConnect)))
 
 	// ── Dashboard WebSocket ──────────────────────────────
 	mux.HandleFunc("GET /ws/realtime", hub.HandleDashboardWS)
@@ -109,10 +119,29 @@ func main() {
 	tunnelProxy := api.HandleTunnelProxy(hub, cfg.TunnelDomain)
 	tunnelHandler := middleware.CORSMiddleware(tunnelProxy)
 
-	// Start the main API + dashboard server
+	// Create HTTP servers with timeouts
+	apiSrv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	proxySrv := &http.Server{
+		Addr:              ":8081",
+		Handler:           tunnelHandler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	// Start proxy server
 	go func() {
 		log.Printf("[server] Tunnel proxy listening on :8081 for *.%s", cfg.TunnelDomain)
-		if err := http.ListenAndServe(":8081", tunnelHandler); err != nil {
+		if err := proxySrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Tunnel proxy server failed: %v", err)
 		}
 	}()
@@ -122,9 +151,37 @@ func main() {
 	log.Printf("[server] Agent WS: ws://localhost:%s/ws/agent", cfg.Port)
 	log.Printf("[server] API: http://localhost:%s/api/", cfg.Port)
 
-	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	// Start API server in a goroutine
+	go func() {
+		if err := apiSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed: %v", err)
+		}
+	}()
+
+	// Wait for shutdown signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("[server] Shutdown signal received, gracefully stopping...")
+
+	// Give a 30-second window for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Close all agent connections
+	if hub != nil {
+		hub.DisconnectAll()
 	}
+
+	// Shutdown servers
+	if err := apiSrv.Shutdown(ctx); err != nil {
+		log.Printf("[server] API server shutdown error: %v", err)
+	}
+	if err := proxySrv.Shutdown(ctx); err != nil {
+		log.Printf("[server] Proxy server shutdown error: %v", err)
+	}
+
+	log.Println("[server] Shutdown complete")
 }
 
 func createDefaultSuperadmin() {
@@ -136,15 +193,16 @@ func createDefaultSuperadmin() {
 
 	email := os.Getenv("ADMIN_EMAIL")
 	password := os.Getenv("ADMIN_PASSWORD")
-	if email == "" {
-		email = "admin@ultraslim.dev"
-	}
-	if password == "" {
-		password = "UltraSlim@2026!"
+	if email == "" || password == "" {
+		log.Fatalf("[server] ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required for initial setup")
 	}
 
-	hash, _ := auth.HashPassword(password)
-	_, err := db.DB.Exec(`
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		log.Fatalf("[server] Failed to hash admin password: %v", err)
+	}
+
+	_, err = db.DB.Exec(`
 		INSERT INTO users (email, password_hash, display_name, role, max_tunnels)
 		VALUES ($1, $2, 'Admin', 'superadmin', 100)
 		ON CONFLICT (email) DO UPDATE SET role = 'superadmin'

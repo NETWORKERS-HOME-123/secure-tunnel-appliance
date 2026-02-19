@@ -97,3 +97,16 @@ func GenerateTunnelID() string {
 	rand.Read(b)
 	return "tn_" + hex.EncodeToString(b)
 }
+
+// GeneratePasswordResetToken creates a cryptographic token for password reset
+func GeneratePasswordResetToken() (string, string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", "", err
+	}
+	token := hex.EncodeToString(b)
+	hash := sha256.Sum256([]byte(token))
+	hashStr := hex.EncodeToString(hash[:])
+	return token, hashStr, nil
+}

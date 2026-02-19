@@ -18,9 +18,10 @@ func Init(databaseURL string) error {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
-	DB.SetMaxOpenConns(25)
-	DB.SetMaxIdleConns(5)
-	DB.SetConnMaxLifetime(5 * time.Minute)
+	DB.SetMaxOpenConns(50)
+	DB.SetMaxIdleConns(25)
+	DB.SetConnMaxLifetime(30 * time.Minute)
+	DB.SetConnMaxIdleTime(5 * time.Minute)
 
 	if err = DB.Ping(); err != nil {
 		return fmt.Errorf("failed to ping database: %w", err)
@@ -122,14 +123,29 @@ func Migrate() error {
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 	);
 
+	CREATE TABLE IF NOT EXISTS password_reset_tokens (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		token_hash TEXT NOT NULL,
+		expires_at TIMESTAMPTZ NOT NULL,
+		used BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_tunnels_user_id ON tunnels(user_id);
 	CREATE INDEX IF NOT EXISTS idx_tunnels_tunnel_id ON tunnels(tunnel_id);
 	CREATE INDEX IF NOT EXISTS idx_tunnels_status ON tunnels(status);
+	CREATE INDEX IF NOT EXISTS idx_tunnels_user_status ON tunnels(user_id, status);
 	CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
 	CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
 	CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+	CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
 	CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+	CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 	CREATE INDEX IF NOT EXISTS idx_connection_logs_tunnel_id ON connection_logs(tunnel_id);
+	CREATE INDEX IF NOT EXISTS idx_connection_logs_user_id ON connection_logs(user_id);
+	CREATE INDEX IF NOT EXISTS idx_connection_logs_created_at ON connection_logs(created_at DESC);
+	CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash ON password_reset_tokens(token_hash);
 	`
 
 	_, err := DB.Exec(schema)

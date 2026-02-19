@@ -1,8 +1,10 @@
 package api
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -224,11 +226,9 @@ func HandleDeleteTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Disconnect agent if connected
+	// Disconnect agent if connected (marks tunnel as deleted to skip DB updates in removeAgent)
 	if relay.RelayHub != nil && tid != "" {
-		if agent := relay.RelayHub.GetAgent(tid); agent != nil {
-			agent.Conn.Close()
-		}
+		relay.RelayHub.DeleteAndDisconnect(tid)
 	}
 
 	// Notification and audit
@@ -785,7 +785,7 @@ func HandleSystemHealth(w http.ResponseWriter, r *http.Request) {
 
 var startTime = time.Now()
 
-// ── Password Reset (simplified) ──────────────────────────
+// ── Password Reset (secure two-step flow) ──────────────────────────
 
 func HandleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var body struct {
@@ -796,10 +796,44 @@ func HandleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// In production, send an email with a reset token
-	// For MVP, we just acknowledge
-	var exists bool
-	db.DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`, body.Email).Scan(&exists)
+	// Check if user exists
+	var userID string
+	err := db.DB.QueryRow(`SELECT id FROM users WHERE email = $1`, body.Email).Scan(&userID)
+	if err == sql.ErrNoRows {
+		// Always return success to prevent email enumeration
+		writeJSON(w, http.StatusOK, map[string]string{
+			"message": "If an account with that email exists, a reset link has been sent.",
+		})
+		return
+	}
+	if err != nil {
+		log.Printf("[api] ForgotPassword query error: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	// Generate reset token
+	token, tokenHash, err := auth.GeneratePasswordResetToken()
+	if err != nil {
+		log.Printf("[api] Failed to generate reset token: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	// Store token in DB with 15-minute expiry
+	_, err = db.DB.Exec(
+		`INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, NOW() + INTERVAL '15 minutes')`,
+		userID, tokenHash,
+	)
+	if err != nil {
+		log.Printf("[api] Failed to store reset token: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	// TODO: Send email with reset link containing the token
+	// For now, log the token to stdout for testing
+	log.Printf("[api] Password reset token for %s: %s (valid for 15 minutes)", body.Email, token)
 
 	// Always return success to prevent email enumeration
 	writeJSON(w, http.StatusOK, map[string]string{
@@ -809,23 +843,91 @@ func HandleForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 func HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Email       string `json:"email"`
+		Token       string `json:"token"`
 		NewPassword string `json:"new_password"`
 	}
-	if err := readJSON(r, &body); err != nil || body.Email == "" || body.NewPassword == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "email and new_password required"})
+	if err := readJSON(r, &body); err != nil || body.Token == "" || body.NewPassword == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "token and new_password required"})
 		return
 	}
 
-	hash, _ := auth.HashPassword(body.NewPassword)
-	res, _ := db.DB.Exec(`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2`, hash, body.Email)
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+	if len(body.NewPassword) < 6 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "password must be at least 6 characters"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"status": "password updated"})
+	// Hash the provided token to look it up
+	hash := sha256.Sum256([]byte(body.Token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	// Look up and validate the token
+	var userID string
+	var used bool
+	err := db.DB.QueryRow(
+		`SELECT user_id, used FROM password_reset_tokens WHERE token_hash = $1 AND expires_at > NOW() LIMIT 1`,
+		tokenHash,
+	).Scan(&userID, &used)
+
+	if err == sql.ErrNoRows {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired token"})
+		return
+	}
+	if err != nil {
+		log.Printf("[api] ResetPassword query error: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	if used {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "token already used"})
+		return
+	}
+
+	// Hash the new password
+	pwdHash, err := auth.HashPassword(body.NewPassword)
+	if err != nil {
+		log.Printf("[api] Failed to hash password: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	// Update password and mark token as used (atomic transaction)
+	tx, err := db.DB.Begin()
+	if err != nil {
+		log.Printf("[api] Failed to begin transaction: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+	defer tx.Rollback()
+
+	// Update password
+	_, err = tx.Exec(`UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`, pwdHash, userID)
+	if err != nil {
+		log.Printf("[api] Failed to update password: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	// Mark token as used
+	_, err = tx.Exec(`UPDATE password_reset_tokens SET used = TRUE WHERE token_hash = $1`, tokenHash)
+	if err != nil {
+		log.Printf("[api] Failed to mark token as used: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		log.Printf("[api] Failed to commit transaction: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "server error"})
+		return
+	}
+
+	// Log the successful reset
+	var email string
+	db.DB.QueryRow(`SELECT email FROM users WHERE id = $1`, userID).Scan(&email)
+	log.Printf("[api] Password reset successful for %s", email)
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "password updated successfully"})
 }
 
 // HandleRefreshToken generates a new token from a valid existing one

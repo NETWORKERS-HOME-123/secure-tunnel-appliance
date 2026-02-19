@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -25,19 +26,34 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 65536,
 }
 
+// DashClient represents a dashboard WebSocket connection with write synchronization
+type DashClient struct {
+	Conn *websocket.Conn
+	mu   sync.Mutex
+}
+
+func (dc *DashClient) WriteJSON(v interface{}) error {
+	dc.mu.Lock()
+	defer dc.mu.Unlock()
+	return dc.Conn.WriteJSON(v)
+}
+
 // AgentConn represents a connected CLI agent
 type AgentConn struct {
-	Conn        *websocket.Conn
-	UserID      string
-	TunnelID    string
-	TunnelDBID  string
-	Type        string
-	LocalPort   int
-	Endpoint    string
-	mu          sync.Mutex
-	pending     map[string]chan *models.ProxyResponsePayload
-	pendingMu   sync.Mutex
-	connectedAt time.Time
+	Conn           *websocket.Conn
+	UserID         string
+	TunnelID       string
+	TunnelDBID     string
+	Type           string
+	LocalPort      int
+	AssignedPort   int // TCP port assigned to this tunnel
+	Endpoint       string
+	deleted        bool // true if tunnel was deleted, skips DB cleanup in removeAgent
+	done           chan struct{}
+	mu             sync.Mutex
+	pending        map[string]chan *models.ProxyResponsePayload
+	pendingMu      sync.Mutex
+	connectedAt    time.Time
 }
 
 // Hub manages all active agent connections
@@ -52,7 +68,7 @@ type Hub struct {
 	tcpMu        sync.Mutex
 
 	// Dashboard WebSocket connections
-	dashClients map[string][]*websocket.Conn // keyed by user_id
+	dashClients map[string][]*DashClient // keyed by user_id
 	dashMu      sync.RWMutex
 }
 
@@ -66,7 +82,7 @@ func NewHub(domain string, tcpMin, tcpMax int) *Hub {
 		tcpPortMax:   tcpMax,
 		nextTCPPort:  int32(tcpMin),
 		tcpListeners: make(map[int]net.Listener),
-		dashClients:  make(map[string][]*websocket.Conn),
+		dashClients:  make(map[string][]*DashClient),
 	}
 	RelayHub = h
 	return h
@@ -165,20 +181,6 @@ func (h *Hub) HandleAgentConnect(w http.ResponseWriter, r *http.Request) {
 	_ = userEmail
 	_ = userRole
 
-	// Check tunnel limit
-	var tunnelCount int
-	var maxTunnels int
-	db.DB.QueryRow(`SELECT COUNT(*) FROM tunnels WHERE user_id = $1 AND status = 'online'`, userID).Scan(&tunnelCount)
-	db.DB.QueryRow(`SELECT max_tunnels FROM users WHERE id = $1`, userID).Scan(&maxTunnels)
-	if maxTunnels == 0 {
-		maxTunnels = 5
-	}
-	if tunnelCount >= maxTunnels {
-		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: fmt.Sprintf("tunnel limit reached (%d/%d)", tunnelCount, maxTunnels)})
-		conn.Close()
-		return
-	}
-
 	tunnelID := auth.GenerateTunnelID()
 	tunnelType := reg.Type
 	if tunnelType == "" {
@@ -200,15 +202,65 @@ func (h *Hub) HandleAgentConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Insert tunnel in DB
+	// Check tunnel limit and insert in a transaction (atomic operation)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	tx, err := db.DB.BeginTx(ctx, nil)
+	if err != nil {
+		log.Printf("[relay] Failed to begin transaction: %v", err)
+		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: "server error"})
+		conn.Close()
+		return
+	}
+	defer tx.Rollback()
+
+	// Lock the user row to prevent concurrent tunnel creation from exceeding limit
+	var maxTunnels int
+	err = tx.QueryRowContext(ctx, `SELECT max_tunnels FROM users WHERE id = $1 FOR UPDATE`, userID).Scan(&maxTunnels)
+	if err != nil {
+		log.Printf("[relay] Failed to lock user: %v", err)
+		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: "server error"})
+		conn.Close()
+		return
+	}
+	if maxTunnels == 0 {
+		maxTunnels = 5
+	}
+
+	// Count online tunnels
+	var tunnelCount int
+	err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM tunnels WHERE user_id = $1 AND status = 'online'`, userID).Scan(&tunnelCount)
+	if err != nil {
+		log.Printf("[relay] Failed to count tunnels: %v", err)
+		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: "server error"})
+		conn.Close()
+		return
+	}
+
+	if tunnelCount >= maxTunnels {
+		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: fmt.Sprintf("tunnel limit reached (%d/%d)", tunnelCount, maxTunnels)})
+		conn.Close()
+		return
+	}
+
+	// Insert tunnel in DB within the transaction
 	var dbID string
-	err = db.DB.QueryRow(`
+	err = tx.QueryRowContext(ctx, `
 		INSERT INTO tunnels (user_id, tunnel_id, type, local_port, public_endpoint, status, assigned_port)
 		VALUES ($1, $2, $3, $4, $5, 'online', $6)
 		RETURNING id
 	`, userID, tunnelID, tunnelType, reg.LocalPort, endpoint, assignedPort).Scan(&dbID)
 	if err != nil {
 		log.Printf("[relay] Failed to insert tunnel: %v", err)
+		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: "failed to create tunnel"})
+		conn.Close()
+		return
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		log.Printf("[relay] Failed to commit transaction: %v", err)
 		conn.WriteJSON(models.ControlMessage{Type: "error", Payload: "failed to create tunnel"})
 		conn.Close()
 		return
@@ -224,15 +276,17 @@ func (h *Hub) HandleAgentConnect(w http.ResponseWriter, r *http.Request) {
 		VALUES ($1, 'tunnel.created', 'tunnel', $2)`, userID, tunnelID)
 
 	agent := &AgentConn{
-		Conn:        conn,
-		UserID:      userID,
-		TunnelID:    tunnelID,
-		TunnelDBID:  dbID,
-		Type:        tunnelType,
-		LocalPort:   reg.LocalPort,
-		Endpoint:    endpoint,
-		pending:     make(map[string]chan *models.ProxyResponsePayload),
-		connectedAt: time.Now(),
+		Conn:         conn,
+		UserID:       userID,
+		TunnelID:     tunnelID,
+		TunnelDBID:   dbID,
+		Type:         tunnelType,
+		LocalPort:    reg.LocalPort,
+		AssignedPort: assignedPort,
+		Endpoint:     endpoint,
+		done:         make(chan struct{}),
+		pending:      make(map[string]chan *models.ProxyResponsePayload),
+		connectedAt:  time.Now(),
 	}
 
 	h.mu.Lock()
@@ -280,13 +334,17 @@ func (h *Hub) handleAgentMessages(agent *AgentConn) {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for {
-			agent.mu.Lock()
-			err := agent.Conn.WriteMessage(websocket.PingMessage, nil)
-			agent.mu.Unlock()
-			if err != nil {
+			select {
+			case <-agent.done:
 				return
+			case <-ticker.C:
+				agent.mu.Lock()
+				err := agent.Conn.WriteMessage(websocket.PingMessage, nil)
+				agent.mu.Unlock()
+				if err != nil {
+					return
+				}
 			}
-			<-ticker.C
 		}
 	}()
 
@@ -326,43 +384,73 @@ func (h *Hub) handleAgentMessages(agent *AgentConn) {
 }
 
 func (h *Hub) removeAgent(agent *AgentConn) {
+	// Close the done channel to signal the ping goroutine to exit
+	close(agent.done)
+
 	h.mu.Lock()
 	delete(h.agents, agent.TunnelID)
 	h.mu.Unlock()
 
-	// Close TCP listener if any
-	h.tcpMu.Lock()
-	for port, ln := range h.tcpListeners {
-		// Find listener for this agent's assigned port
-		var assignedPort int
-		db.DB.QueryRow(`SELECT assigned_port FROM tunnels WHERE id = $1`, agent.TunnelDBID).Scan(&assignedPort)
-		if port == assignedPort {
+	// Close TCP listener if any (using cached AssignedPort field, not DB query)
+	if agent.AssignedPort > 0 {
+		h.tcpMu.Lock()
+		if ln, exists := h.tcpListeners[agent.AssignedPort]; exists {
 			ln.Close()
-			delete(h.tcpListeners, port)
+			delete(h.tcpListeners, agent.AssignedPort)
 		}
+		h.tcpMu.Unlock()
 	}
-	h.tcpMu.Unlock()
 
-	// Update DB
-	db.DB.Exec(`UPDATE tunnels SET status = 'offline', updated_at = NOW() WHERE id = $1`, agent.TunnelDBID)
+	// Skip DB updates if tunnel was explicitly deleted
+	if !agent.deleted {
+		// Update DB
+		db.DB.Exec(`UPDATE tunnels SET status = 'offline', updated_at = NOW() WHERE id = $1`, agent.TunnelDBID)
 
-	// Create notification
-	db.DB.Exec(`INSERT INTO notifications (user_id, title, message, type)
-		VALUES ($1, 'Tunnel Offline', $2, 'warning')`,
-		agent.UserID, fmt.Sprintf("Tunnel %s is now offline", agent.TunnelID))
+		// Create notification
+		db.DB.Exec(`INSERT INTO notifications (user_id, title, message, type)
+			VALUES ($1, 'Tunnel Offline', $2, 'warning')`,
+			agent.UserID, fmt.Sprintf("Tunnel %s is now offline", agent.TunnelID))
 
-	// Audit log
-	db.DB.Exec(`INSERT INTO audit_logs (user_id, action, target_type, target_id)
-		VALUES ($1, 'tunnel.offline', 'tunnel', $2)`, agent.UserID, agent.TunnelID)
+		// Audit log
+		db.DB.Exec(`INSERT INTO audit_logs (user_id, action, target_type, target_id)
+			VALUES ($1, 'tunnel.offline', 'tunnel', $2)`, agent.UserID, agent.TunnelID)
 
-	// Broadcast to dashboard
-	h.BroadcastToUser(agent.UserID, models.RealtimeEvent{
-		Event: "UPDATE",
-		Table: "tunnels",
-	})
+		// Broadcast to dashboard
+		h.BroadcastToUser(agent.UserID, models.RealtimeEvent{
+			Event: "UPDATE",
+			Table: "tunnels",
+		})
+	}
 
 	agent.Conn.Close()
 	log.Printf("[relay] Agent %s removed", agent.TunnelID)
+}
+
+// DeleteAndDisconnect marks a tunnel as deleted and disconnects the agent
+func (h *Hub) DeleteAndDisconnect(tunnelID string) {
+	h.mu.Lock()
+	agent, exists := h.agents[tunnelID]
+	h.mu.Unlock()
+
+	if exists {
+		agent.deleted = true
+		agent.Conn.Close()
+		// removeAgent will be called via defer in handleAgentMessages
+	}
+}
+
+// DisconnectAll closes all agent connections (used during graceful shutdown)
+func (h *Hub) DisconnectAll() {
+	h.mu.Lock()
+	agents := make([]*AgentConn, 0, len(h.agents))
+	for _, agent := range h.agents {
+		agents = append(agents, agent)
+	}
+	h.mu.Unlock()
+
+	for _, agent := range agents {
+		agent.Conn.Close()
+	}
 }
 
 // GetAgent returns the agent for a tunnel ID
@@ -520,8 +608,10 @@ func (h *Hub) HandleDashboardWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	client := &DashClient{Conn: conn}
+
 	h.dashMu.Lock()
-	h.dashClients[claims.UserID] = append(h.dashClients[claims.UserID], conn)
+	h.dashClients[claims.UserID] = append(h.dashClients[claims.UserID], client)
 	h.dashMu.Unlock()
 
 	log.Printf("[relay] Dashboard WS connected for user %s", claims.UserID)
@@ -532,7 +622,7 @@ func (h *Hub) HandleDashboardWS(w http.ResponseWriter, r *http.Request) {
 			h.dashMu.Lock()
 			clients := h.dashClients[claims.UserID]
 			for i, c := range clients {
-				if c == conn {
+				if c == client {
 					h.dashClients[claims.UserID] = append(clients[:i], clients[i+1:]...)
 					break
 				}
@@ -549,8 +639,8 @@ func (h *Hub) BroadcastToUser(userID string, event models.RealtimeEvent) {
 	clients := h.dashClients[userID]
 	h.dashMu.RUnlock()
 
-	for _, conn := range clients {
-		conn.WriteJSON(event)
+	for _, client := range clients {
+		client.WriteJSON(event)
 	}
 }
 
