@@ -1,0 +1,75 @@
+============================================================
+UltraSlim Comprehensive Test Suite
+============================================================
+
+[Setup] Logging in as admin...
+  Admin token acquired (code=200)
+[Setup] Creating test user...
+  Test user created: 3c693812-bfe3-4d0a-a701-dbe4aeed32b4
+
+--- Group 1: Auth Endpoints ---
+  [PASS] Token refresh
+  [PASS] Forgot password
+  [PASS] Reset password
+  [PASS] Login with reset password
+
+--- Group 2: Profile Endpoints ---
+  [PASS] Update profile
+  [PASS] Verify profile update
+
+--- Group 3: Tunnel CRUD ---
+  [PASS] Insert test tunnel in DB
+  [PASS] List tunnels (has test tunnel)
+  [FAIL] Tunnel health check — code=0, resp={'_raw': ''}
+  [FAIL] Delete tunnel — code=0, resp={'_raw': ''}
+  [FAIL] Notification created on tunnel delete — found=False, notif_id=
+
+--- Group 4: Notification Operations ---
+  [FAIL] Mark notification read — No notification ID available
+  [PASS] Mark all notifications read
+  [PASS] Delete all notifications
+  [PASS] Notifications empty after delete
+
+--- Group 5: API Key CRUD ---
+  [PASS] Create API key
+  [PASS] Delete API key
+  [PASS] API key gone after delete
+
+--- Group 6: Webhook Update & Delete ---
+  [PASS] Create webhook for update test
+  [PASS] Update webhook (deactivate)
+  [PASS] Delete webhook
+
+--- Group 7: Admin Endpoints ---
+  [PASS] Admin assign role
+  [PASS] Verify role assigned
+  [PASS] Admin audit logs
+
+--- Group 8: Config & Analytics ---
+  [PASS] Config export
+  [PASS] Connection logs
+
+--- Group 9: WebSocket & Tunnel Flow ---
+  websocket-client not installed, skipping WebSocket tests
+  [FAIL] WebSocket agent register — websocket-client not installed
+  [FAIL] Dashboard realtime WebSocket — websocket-client not installed
+  [FAIL] Tunnel appears in API (online) — websocket-client not installed
+  [FAIL] HTTP tunnel proxy attempt — websocket-client not installed
+  [FAIL] Tunnel goes offline after disconnect — websocket-client not installed
+
+============================================================
+RESULTS: 22/31 passed, 9 failed
+============================================================
+
+Failed tests:
+  ✗ Tunnel health check: code=0, resp={'_raw': ''}
+  ✗ Delete tunnel: code=0, resp={'_raw': ''}
+  ✗ Notification created on tunnel delete: found=False, notif_id=
+  ✗ Mark notification read: No notification ID available
+  ✗ WebSocket agent register: websocket-client not installed
+  ✗ Dashboard realtime WebSocket: websocket-client not installed
+  ✗ Tunnel appears in API (online): websocket-client not installed
+  ✗ HTTP tunnel proxy attempt: websocket-client not installed
+  ✗ Tunnel goes offline after disconnect: websocket-client not installed
+
+Results written to /tmp/test_all_results.json
