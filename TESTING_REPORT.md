@@ -2,7 +2,7 @@
 
 **Date:** February 19, 2026
 **Environment:** DigitalOcean Droplet (BLR1, s-1vcpu-2gb, IP: 139.59.93.230)
-**URL:** https://tunnel.networkershome.com
+**URL:** https://21tunnel.com
 **Status:** ✅ **ALL SYSTEMS OPERATIONAL — 31/31 TESTS PASSING**
 
 ---
@@ -106,8 +106,8 @@ UltraSlim is a production-ready, self-hosted ngrok-style secure tunneling platfo
 - **Security**: JWT HS256 (72h expiry), bcrypt passwords, API key hashing
 
 ### Network & TLS
-- **Domain**: `tunnel.networkershome.com` (Let's Encrypt)
-- **Wildcard DNS**: `*.tunnel.networkershome.com` → `139.59.93.230` ✅
+- **Domain**: `21tunnel.com` (Let's Encrypt)
+- **Wildcard DNS**: `*.21tunnel.com` → `139.59.93.230` ✅
 - **Wildcard HTTPS**: TLS certificates auto-renewed ✅
 - **Reverse Proxy**: Caddy 2 with auto-TLS
 

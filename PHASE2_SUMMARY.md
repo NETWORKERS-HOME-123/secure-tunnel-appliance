@@ -300,23 +300,23 @@ Runs every 30 seconds:
 
 ### Check Metrics
 ```bash
-curl https://tunnel.networkershome.com/api/metrics
+curl https://21tunnel.com/api/metrics
 ```
 
 ### Check Alerts
 ```bash
-curl https://tunnel.networkershome.com/api/alerts
+curl https://21tunnel.com/api/alerts
 ```
 
 ### Check Circuit Breaker Status
 ```bash
-curl https://tunnel.networkershome.com/api/circuit-breaker/status
+curl https://21tunnel.com/api/circuit-breaker/status
 ```
 
 ### Trigger Rate Limiting
 ```bash
 for i in {1..15}; do
-  curl -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"test@example.com","password":"test"}'
 done
@@ -357,5 +357,5 @@ The system is now ready for production deployment with 100+ concurrent users and
 **Status**: ✅ **PHASE 2 COMPLETE**
 **Next**: Phase 3 Optional Enhancements (Prometheus, Grafana, Distributed Tracing)
 **Repository**: https://github.com/vikasswaminh/tunnel-buddy-appliance
-**Live Demo**: https://tunnel.networkershome.com
+**Live Demo**: https://21tunnel.com
 

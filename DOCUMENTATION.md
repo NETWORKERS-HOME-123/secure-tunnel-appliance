@@ -55,8 +55,8 @@ UltraSlim is a self-hosted, ngrok-style secure tunneling platform that exposes l
 ```
                          Cloudflare DNS
                               |
-              tunnel.networkershome.com
-              *.tunnel.networkershome.com
+              21tunnel.com
+              *.21tunnel.com
                               |
                          Caddy (TLS)
                          :80 / :443
@@ -76,12 +76,12 @@ UltraSlim is a self-hosted, ngrok-style secure tunneling platform that exposes l
 ### Data Flow - HTTP Tunnel
 
 ```
-1. CLI connects to wss://tunnel.networkershome.com/ws/agent
+1. CLI connects to wss://21tunnel.com/ws/agent
 2. CLI sends: { type: "register", payload: { token, local_port, type: "http" } }
 3. Server assigns tunnel ID (e.g. tn_abc123) and public endpoint
 4. Server responds: { type: "registered", payload: { tunnel_id, public_endpoint } }
 
-5. External request hits: https://tn_abc123.tunnel.networkershome.com/path
+5. External request hits: https://tn_abc123.21tunnel.com/path
 6. Caddy forwards to Go proxy (:8081)
 7. Go proxy finds agent for tn_abc123
 8. Go proxy sends via WebSocket: { type: "proxy_request", payload: { method, path, headers, body } }
@@ -173,7 +173,7 @@ tunnel-buddy-main/src/
 Open your browser and navigate to:
 
 ```
-https://tunnel.networkershome.com
+https://21tunnel.com
 ```
 
 ### Step 2: Create an Account
@@ -220,7 +220,7 @@ Output:
 |                UltraSlim Tunnel Active                  |
 +========================================================+
 |  Tunnel ID:  tn_a1b2c3d4                               |
-|  Forwarding: https://tn_a1b2c3d4.tunnel.networkershome.com -> localhost:3000 |
+|  Forwarding: https://tn_a1b2c3d4.21tunnel.com -> localhost:3000 |
 |  Type:       http                                      |
 +========================================================+
 |  Press Ctrl+C to disconnect                            |
@@ -231,14 +231,14 @@ Output:
 
 Share the public URL with anyone:
 ```
-https://tn_a1b2c3d4.tunnel.networkershome.com
+https://tn_a1b2c3d4.21tunnel.com
 ```
 
 All requests to this URL are forwarded to your local machine in real-time.
 
 ### Step 5: Monitor in the Dashboard
 
-Return to the dashboard at `https://tunnel.networkershome.com` to see:
+Return to the dashboard at `https://21tunnel.com` to see:
 - Your tunnel listed with **online** status
 - Real-time bandwidth counters
 - Connection count
@@ -281,13 +281,13 @@ ultraslim login --email user@example.com --password yourpassword
 ultraslim login --api-key usk_xxxxxxxxxxxxxxxxxxxx
 
 # Login to a specific server
-ultraslim login --server https://tunnel.networkershome.com --email user@example.com
+ultraslim login --server https://21tunnel.com --email user@example.com
 
 # Flags:
 #   --email     Account email
 #   --password  Account password
 #   --api-key   API key (alternative to email/password)
-#   --server    Server URL (default: https://tunnel.networkershome.com)
+#   --server    Server URL (default: https://21tunnel.com)
 ```
 
 Configuration is saved to `~/.ultraslim/config.json`.
@@ -316,8 +316,8 @@ ultraslim connect 8080 --type ws
 #   --type   Tunnel type: http, tcp, ssh, rdp, udp, ws (default: http)
 ```
 
-**HTTP tunnels** get a subdomain: `https://tn_xxxx.tunnel.networkershome.com`
-**TCP tunnels** get a port: `tunnel.networkershome.com:10001`
+**HTTP tunnels** get a subdomain: `https://tn_xxxx.21tunnel.com`
+**TCP tunnels** get a port: `21tunnel.com:10001`
 
 Traffic is logged with color-coded status codes in the terminal:
 ```
@@ -336,8 +336,8 @@ ultraslim status
 # Output:
 # TUNNEL ID    TYPE     STATUS     ENDPOINT                                         PORT
 # --------------------------------------------------------------------------------
-# tn_a1b2c3d4  http     online     https://tn_a1b2c3d4.tunnel.networkershome.com    3000
-# tn_e5f6g7h8  tcp      offline    tunnel.networkershome.com:10001                  5432
+# tn_a1b2c3d4  http     online     https://tn_a1b2c3d4.21tunnel.com    3000
+# tn_e5f6g7h8  tcp      offline    21tunnel.com:10001                  5432
 ```
 
 #### `ultraslim config`
@@ -348,7 +348,7 @@ Display current CLI configuration.
 ultraslim config
 
 # Output:
-# Server URL: https://tunnel.networkershome.com
+# Server URL: https://21tunnel.com
 # Email:      user@example.com
 # Token:      eyJhbG...175o
 # API Key:    (not set)
@@ -370,7 +370,7 @@ Location: `~/.ultraslim/config.json`
 
 ```json
 {
-  "server_url": "https://tunnel.networkershome.com",
+  "server_url": "https://21tunnel.com",
   "token": "eyJhbGciOiJIUzI1NiIs...",
   "api_key": "",
   "email": "user@example.com"
@@ -483,7 +483,7 @@ Public page at `/status` showing platform health.
 ### Base URL
 
 ```
-https://tunnel.networkershome.com/api
+https://21tunnel.com/api
 ```
 
 ### Authentication
@@ -615,7 +615,7 @@ Public health check endpoint.
     "tunnel_id": "tn_a1b2c3d4",
     "type": "http",
     "local_port": 3000,
-    "public_endpoint": "https://tn_a1b2c3d4.tunnel.networkershome.com",
+    "public_endpoint": "https://tn_a1b2c3d4.21tunnel.com",
     "status": "online",
     "bytes_in": 15234,
     "bytes_out": 89012,
@@ -765,7 +765,7 @@ CLI agent connection endpoint. Used by the CLI to register tunnels and relay tra
   "type": "registered",
   "payload": {
     "tunnel_id": "tn_a1b2c3d4",
-    "public_endpoint": "https://tn_a1b2c3d4.tunnel.networkershome.com",
+    "public_endpoint": "https://tn_a1b2c3d4.21tunnel.com",
     "assigned_port": 0
   }
 }
@@ -842,8 +842,8 @@ Loads configuration from environment variables:
 | `PORT` | `8080` | API server port |
 | `DATABASE_URL` | postgres://ultraslim:... | PostgreSQL connection string |
 | `JWT_SECRET` | (required) | HMAC-SHA256 signing key |
-| `DOMAIN` | tunnel.networkershome.com | Main domain |
-| `TUNNEL_DOMAIN` | tunnel.networkershome.com | Tunnel subdomain parent |
+| `DOMAIN` | 21tunnel.com | Main domain |
+| `TUNNEL_DOMAIN` | 21tunnel.com | Tunnel subdomain parent |
 | `TCP_PORT_MIN` | `10000` | First TCP tunnel port |
 | `TCP_PORT_MAX` | `20000` | Last TCP tunnel port |
 
@@ -944,7 +944,7 @@ The `spaHandler` serves the React build:
 
 The `useTunnels` hook establishes a WebSocket connection:
 1. Calls `api.connectRealtime(callback)` with JWT token
-2. WebSocket connects to `wss://tunnel.networkershome.com/ws/realtime?token=...`
+2. WebSocket connects to `wss://21tunnel.com/ws/realtime?token=...`
 3. On tunnel events (INSERT/UPDATE/DELETE), callback triggers state refresh
 4. Auto-reconnects after 5 seconds on disconnect
 
@@ -1235,15 +1235,15 @@ journalctl -u caddy -n 50 --no-pager
 
 | Error | Cause | Fix |
 |---|---|---|
-| ACME challenge failed | DNS not pointing to server | Verify A record for tunnel.networkershome.com |
+| ACME challenge failed | DNS not pointing to server | Verify A record for 21tunnel.com |
 | on-demand TLS error | Caddyfile misconfigured | Use `http://` prefix for wildcard domains |
 | rate limited | Too many cert requests | Wait 1 hour, check rate limits |
 
 ### Tunnel Not Connecting
 
 1. **Check CLI auth:** `ultraslim config` - verify token is present
-2. **Check server URL:** Ensure `server_url` is `https://tunnel.networkershome.com`
-3. **Check WebSocket:** The CLI connects to `wss://tunnel.networkershome.com/ws/agent`
+2. **Check server URL:** Ensure `server_url` is `https://21tunnel.com`
+3. **Check WebSocket:** The CLI connects to `wss://21tunnel.com/ws/agent`
 4. **Check firewall:** Ensure port 443 is accessible from client
 5. **Check tunnel limit:** Users get 5 tunnels max by default
 

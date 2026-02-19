@@ -52,7 +52,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	// Parse allowed origins from environment or use default
 	allowedOriginsStr := os.Getenv("ALLOWED_ORIGINS")
 	if allowedOriginsStr == "" {
-		allowedOriginsStr = "https://tunnel.networkershome.com"
+		allowedOriginsStr = "https://21tunnel.com"
 	}
 	allowedOrigins := make(map[string]bool)
 	for _, origin := range strings.Split(allowedOriginsStr, ",") {

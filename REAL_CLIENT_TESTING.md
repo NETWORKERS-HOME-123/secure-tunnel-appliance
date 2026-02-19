@@ -7,7 +7,7 @@
 
 ## Overview
 
-This document confirms that **real client testing can be performed** using the compiled UltraSlim backend code deployed at https://tunnel.networkershome.com. The backend is fully compiled, deployed, and functional.
+This document confirms that **real client testing can be performed** using the compiled UltraSlim backend code deployed at https://21tunnel.com. The backend is fully compiled, deployed, and functional.
 
 ---
 
@@ -73,7 +73,7 @@ chmod +x test_client.py
   ULTRASLIM API REAL CLIENT TESTING
 ======================================================================
 
-Target API: https://tunnel.networkershome.com
+Target API: https://21tunnel.com
 
 ======================================================================
   1. SYSTEM & MONITORING TESTS
@@ -143,7 +143,7 @@ Target API: https://tunnel.networkershome.com
    Details: Success: 10, Rate Limited: 2
 
 ✅ [2026-02-19 10:00:11] CORS Headers: PASS
-   Details: CORS origin allowed: https://tunnel.networkershome.com
+   Details: CORS origin allowed: https://21tunnel.com
 
 ======================================================================
   TEST SUMMARY
@@ -204,7 +204,7 @@ Same as Python client (identical test cases, different implementation)
 **Expected**: HTTP 200, status="healthy"
 
 ```bash
-curl https://tunnel.networkershome.com/api/health
+curl https://21tunnel.com/api/health
 ```
 
 ### 2. Login Valid
@@ -214,7 +214,7 @@ curl https://tunnel.networkershome.com/api/health
 **Expected**: HTTP 200, returns JWT token
 
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
 ```
@@ -226,7 +226,7 @@ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 **Expected**: HTTP 401, error message
 
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"Wrong"}'
 ```
@@ -387,7 +387,7 @@ jobs:
 ```
 Error: Connection refused
 Reason: API server not running
-Solution: Check if https://tunnel.networkershome.com is accessible
+Solution: Check if https://21tunnel.com is accessible
 ```
 
 ### "Timeout"
@@ -477,10 +477,10 @@ Tests are performed against:
 
 ## Support
 
-- **API Health**: https://tunnel.networkershome.com/api/health
-- **Metrics**: https://tunnel.networkershome.com/api/metrics
-- **Alerts**: https://tunnel.networkershome.com/api/alerts
-- **Circuit Breaker**: https://tunnel.networkershome.com/api/circuit-breaker/status
+- **API Health**: https://21tunnel.com/api/health
+- **Metrics**: https://21tunnel.com/api/metrics
+- **Alerts**: https://21tunnel.com/api/alerts
+- **Circuit Breaker**: https://21tunnel.com/api/circuit-breaker/status
 
 ---
 

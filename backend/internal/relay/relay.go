@@ -462,7 +462,7 @@ func (h *Hub) GetAgent(tunnelID string) *AgentConn {
 
 // GetAgentBySubdomain extracts tunnel ID from subdomain
 func (h *Hub) GetAgentBySubdomain(host string) *AgentConn {
-	// host is like "tn_abc123.tunnel.networkershome.com"
+	// host is like "tn_abc123.21tunnel.com"
 	parts := strings.SplitN(host, ".", 2)
 	if len(parts) < 2 {
 		return nil

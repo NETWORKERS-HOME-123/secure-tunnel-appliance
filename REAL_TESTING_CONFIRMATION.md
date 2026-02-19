@@ -13,7 +13,7 @@ The UltraSlim backend is:
 - ✅ Written in Go 1.25
 - ✅ Compiled to machine binary code
 - ✅ Deployed on production server (DigitalOcean)
-- ✅ Running live at https://tunnel.networkershome.com
+- ✅ Running live at https://21tunnel.com
 - ✅ Connected to real PostgreSQL database
 - ✅ Serving 31 API endpoints
 - ✅ Fully operational and tested
@@ -50,21 +50,21 @@ node test_client.js
 
 ```bash
 # Test health
-curl https://tunnel.networkershome.com/api/health
+curl https://21tunnel.com/api/health
 
 # Test login
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
 
 # Test metrics (Phase 2)
-curl https://tunnel.networkershome.com/api/metrics
+curl https://21tunnel.com/api/metrics
 
 # Test alerts (Phase 2)
-curl https://tunnel.networkershome.com/api/alerts
+curl https://21tunnel.com/api/alerts
 
 # Test circuit breaker (Phase 2)
-curl https://tunnel.networkershome.com/api/circuit-breaker/status
+curl https://21tunnel.com/api/circuit-breaker/status
 ```
 
 ---
@@ -97,7 +97,7 @@ curl https://tunnel.networkershome.com/api/circuit-breaker/status
 ### Evidence 1: Live API Response
 
 ```bash
-$ curl -s https://tunnel.networkershome.com/api/health | json_pp
+$ curl -s https://21tunnel.com/api/health | json_pp
 
 {
    "status" : "healthy",
@@ -115,7 +115,7 @@ $ curl -s https://tunnel.networkershome.com/api/health | json_pp
 ### Evidence 2: Phase 2 Features
 
 ```bash
-$ curl -s https://tunnel.networkershome.com/api/metrics | json_pp
+$ curl -s https://21tunnel.com/api/metrics | json_pp
 
 {
    "metrics" : {
@@ -139,7 +139,7 @@ $ curl -s https://tunnel.networkershome.com/api/metrics | json_pp
 ### Evidence 3: Circuit Breaker Status
 
 ```bash
-$ curl -s https://tunnel.networkershome.com/api/circuit-breaker/status | json_pp
+$ curl -s https://21tunnel.com/api/circuit-breaker/status | json_pp
 
 {
    "database" : {
@@ -168,7 +168,7 @@ $ curl -s https://tunnel.networkershome.com/api/circuit-breaker/status | json_pp
 ### Evidence 4: Authentication Working
 
 ```bash
-$ curl -X POST https://tunnel.networkershome.com/api/auth/login \
+$ curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
 
@@ -190,7 +190,7 @@ $ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 
 ```bash
 $ for i in {1..12}; do
-    curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
+    curl -s -X POST https://21tunnel.com/api/auth/login \
       -H "Content-Type: application/json" \
       -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}' \
       -w "Status: %{http_code}\n" | grep Status
@@ -278,7 +278,7 @@ This IS:
 
 ```bash
 # Just check if API is alive
-curl https://tunnel.networkershome.com/api/health
+curl https://21tunnel.com/api/health
 
 # Should respond with:
 {"status":"healthy",...}
@@ -354,7 +354,7 @@ Every request is:
 
 The compiled code is:
 1. **Active** - Running right now on production
-2. **Accessible** - Available at https://tunnel.networkershome.com
+2. **Accessible** - Available at https://21tunnel.com
 3. **Testable** - Two client implementations provided
 4. **Verified** - All tests passing with real data
 5. **Ready** - For production use and further testing
@@ -369,7 +369,7 @@ python3 test_client.py
 node test_client.js
 
 # Option 3: cURL (no installation needed)
-curl https://tunnel.networkershome.com/api/health
+curl https://21tunnel.com/api/health
 ```
 
 ### What will happen?
@@ -432,7 +432,7 @@ Real tests against real compiled code will execute, confirming:
 The UltraSlim backend:
 - Is written in Go (source code provided)
 - Has been compiled to binary (8.8MB Docker image)
-- Is running on production (https://tunnel.networkershome.com)
+- Is running on production (https://21tunnel.com)
 - Can be tested immediately (scripts provided)
 - All tests are passing (verified)
 - Is production-ready (confirmed)

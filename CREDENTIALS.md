@@ -8,7 +8,7 @@
 ## 🌐 Production URL
 
 ```
-https://tunnel.networkershome.com
+https://21tunnel.com
 ```
 
 ---
@@ -40,7 +40,7 @@ Max Tunnels: 5
 ### 1. Login & Get JWT Token
 
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ultraslim.dev",
@@ -67,15 +67,15 @@ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 # Get your profile
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 
 # List your tunnels
-curl https://tunnel.networkershome.com/api/tunnels \
+curl https://21tunnel.com/api/tunnels \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 
 # Get server analytics
-curl https://tunnel.networkershome.com/api/analytics \
+curl https://21tunnel.com/api/analytics \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 ```
 
@@ -84,7 +84,7 @@ curl https://tunnel.networkershome.com/api/analytics \
 ```bash
 TOKEN="your-jwt-token-here"
 
-curl -X POST https://tunnel.networkershome.com/api/api-keys \
+curl -X POST https://21tunnel.com/api/api-keys \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-api-key"}' | jq '.api_key'
@@ -111,7 +111,7 @@ To get a new token without logging in again:
 ```bash
 TOKEN="your-current-token"
 
-curl -X POST https://tunnel.networkershome.com/api/auth/refresh \
+curl -X POST https://21tunnel.com/api/auth/refresh \
   -H "Authorization: Bearer $TOKEN" | jq '.token'
 ```
 
@@ -123,7 +123,7 @@ Forgot your password? Use the secure token-based reset:
 
 ### Step 1: Request Password Reset
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/forgot-password \
+curl -X POST https://21tunnel.com/api/auth/forgot-password \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev"}'
 ```
@@ -134,7 +134,7 @@ Response: `{"message": "If an account with that email exists, a reset link has b
 
 ### Step 2: Reset Password with Token
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/reset-password \
+curl -X POST https://21tunnel.com/api/auth/reset-password \
   -H "Content-Type: application/json" \
   -d '{
     "token": "64-character-hex-token-from-email",
@@ -153,7 +153,7 @@ curl -X POST https://tunnel.networkershome.com/api/auth/reset-password \
 
 ```bash
 # Check if server is healthy
-curl https://tunnel.networkershome.com/api/health | jq '.'
+curl https://21tunnel.com/api/health | jq '.'
 ```
 
 **Response:**
@@ -172,7 +172,7 @@ curl https://tunnel.networkershome.com/api/health | jq '.'
 To create a new user account:
 
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/signup \
+curl -X POST https://21tunnel.com/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "newuser@example.com",
@@ -215,17 +215,17 @@ HTTP Status: `429 Too Many Requests`
 
 ### Agent WebSocket
 ```
-wss://tunnel.networkershome.com/ws/agent
+wss://21tunnel.com/ws/agent
 ```
 
 **Connect with:**
 ```bash
-wscat -c "wss://tunnel.networkershome.com/ws/agent"
+wscat -c "wss://21tunnel.com/ws/agent"
 ```
 
 ### Dashboard Real-time WebSocket
 ```
-wss://tunnel.networkershome.com/ws/realtime?token=JWT_TOKEN
+wss://21tunnel.com/ws/realtime?token=JWT_TOKEN
 ```
 
 ---
@@ -269,7 +269,7 @@ wss://tunnel.networkershome.com/ws/realtime?token=JWT_TOKEN
 
 **Allowed Origins** (configurable via `ALLOWED_ORIGINS` env var):
 ```
-https://tunnel.networkershome.com
+https://21tunnel.com
 ```
 
 All API calls from other origins will receive:
@@ -350,7 +350,7 @@ Only if `<origin>` matches the allowlist.
 
 ```bash
 # Save token to variable
-TOKEN=$(curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
+TOKEN=$(curl -s -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}' \
   | jq -r '.token')
@@ -358,15 +358,15 @@ TOKEN=$(curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
 echo "Token: $TOKEN"
 
 # Use in requests
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer $TOKEN"
 
 # Refresh token
-curl -X POST https://tunnel.networkershome.com/api/auth/refresh \
+curl -X POST https://21tunnel.com/api/auth/refresh \
   -H "Authorization: Bearer $TOKEN"
 
 # Create API key
-curl -X POST https://tunnel.networkershome.com/api/api-keys \
+curl -X POST https://21tunnel.com/api/api-keys \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"key"}'
@@ -376,7 +376,7 @@ curl -X POST https://tunnel.networkershome.com/api/api-keys \
 
 ## 📞 Support
 
-- **Status Page**: https://tunnel.networkershome.com/api/health
+- **Status Page**: https://21tunnel.com/api/health
 - **API Reference**: See SETUP_GUIDE.md
 - **Quick Start**: See QUICK_START.md
 - **Full Docs**: See README.md
@@ -393,13 +393,13 @@ curl -X POST https://tunnel.networkershome.com/api/api-keys \
 **Start now:**
 ```bash
 # Step 1: Login
-TOKEN=$(curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
+TOKEN=$(curl -s -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}' \
   | jq -r '.token')
 
 # Step 2: Create API Key
-curl -X POST https://tunnel.networkershome.com/api/api-keys \
+curl -X POST https://21tunnel.com/api/api-keys \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-first-key"}'

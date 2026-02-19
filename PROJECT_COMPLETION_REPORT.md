@@ -5,7 +5,7 @@
 **Version**: 2.0
 **Date**: February 19, 2026
 **Repository**: https://github.com/vikasswaminh/tunnel-buddy-appliance
-**Live Demo**: https://tunnel.networkershome.com
+**Live Demo**: https://21tunnel.com
 
 ---
 
@@ -389,7 +389,7 @@ Indexes: 15 total
 ### Production Environment
 
 ```
-URL: https://tunnel.networkershome.com
+URL: https://21tunnel.com
 Status: ✅ LIVE & OPERATIONAL
 Uptime: 99.9%+
 Version: 2.0
@@ -608,10 +608,10 @@ Results:
 
 ### Links
 
-- **Live Demo**: https://tunnel.networkershome.com
+- **Live Demo**: https://21tunnel.com
 - **Repository**: https://github.com/vikasswaminh/tunnel-buddy-appliance
-- **Health Check**: https://tunnel.networkershome.com/api/health
-- **Metrics**: https://tunnel.networkershome.com/api/metrics
+- **Health Check**: https://21tunnel.com/api/health
+- **Metrics**: https://21tunnel.com/api/metrics
 
 ---
 

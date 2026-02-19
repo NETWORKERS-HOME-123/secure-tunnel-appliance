@@ -3,7 +3,7 @@
 ## 🚀 Live Production Setup
 
 **Status**: ✅ Online and Ready
-**URL**: https://tunnel.networkershome.com
+**URL**: https://21tunnel.com
 
 ---
 
@@ -26,7 +26,7 @@ Password: TestPass123!
 ## 🔐 Login & Get Token
 
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ultraslim.dev",
@@ -55,15 +55,15 @@ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 TOKEN="your-token-here"
 
 # Get your profile
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 
 # List your tunnels
-curl https://tunnel.networkershome.com/api/tunnels \
+curl https://21tunnel.com/api/tunnels \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 
 # Get analytics
-curl https://tunnel.networkershome.com/api/analytics \
+curl https://21tunnel.com/api/analytics \
   -H "Authorization: Bearer $TOKEN" | jq '.'
 ```
 
@@ -75,7 +75,7 @@ curl https://tunnel.networkershome.com/api/analytics \
 ```bash
 TOKEN="your-token-here"
 
-curl -X POST https://tunnel.networkershome.com/api/api-keys \
+curl -X POST https://21tunnel.com/api/api-keys \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-key"}'
@@ -85,7 +85,7 @@ curl -X POST https://tunnel.networkershome.com/api/api-keys \
 ```bash
 TOKEN="your-token-here"
 
-curl -X POST https://tunnel.networkershome.com/api/webhooks \
+curl -X POST https://21tunnel.com/api/webhooks \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -99,7 +99,7 @@ curl -X POST https://tunnel.networkershome.com/api/webhooks \
 ```bash
 TOKEN="your-token-here"
 
-curl -X PATCH https://tunnel.networkershome.com/api/profile \
+curl -X PATCH https://21tunnel.com/api/profile \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"display_name":"New Name"}'
@@ -114,7 +114,7 @@ Send 11 rapid requests to trigger rate limit:
 ```bash
 for i in {1..11}; do
   echo "Request $i:"
-  curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -s -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}' | jq '.error'
 done

@@ -484,13 +484,13 @@ Runs every 30 seconds:
 
 ```bash
 # Check metrics
-curl https://tunnel.networkershome.com/api/metrics
+curl https://21tunnel.com/api/metrics
 
 # Check alerts
-curl https://tunnel.networkershome.com/api/alerts
+curl https://21tunnel.com/api/alerts
 
 # Check circuit breaker status
-curl https://tunnel.networkershome.com/api/circuit-breaker/status
+curl https://21tunnel.com/api/circuit-breaker/status
 ```
 
 ### Test Rate Limiting
@@ -498,7 +498,7 @@ curl https://tunnel.networkershome.com/api/circuit-breaker/status
 ```bash
 # Trigger adaptive rate limiter
 for i in {1..15}; do
-  curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -s -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"test@example.com","password":"test"}'
   echo ""

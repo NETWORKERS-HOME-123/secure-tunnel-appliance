@@ -10,7 +10,7 @@
 
 ### Production Endpoint
 ```
-https://tunnel.networkershome.com
+https://21tunnel.com
 ```
 
 ### Test Accounts (Pre-configured)
@@ -39,7 +39,7 @@ Max Tunnels: 5
 
 1. **Login to Get JWT Token**
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ultraslim.dev",
@@ -62,7 +62,7 @@ Response:
 
 2. **Use Token in Requests**
 ```bash
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
@@ -352,7 +352,7 @@ Response: {
 
 **Connect to Agent WebSocket**
 ```
-wss://tunnel.networkershome.com/ws/agent
+wss://21tunnel.com/ws/agent
 ```
 
 **Register Message**
@@ -371,7 +371,7 @@ wss://tunnel.networkershome.com/ws/agent
   "type": "registered",
   "payload": {
     "tunnel_id": "tn_abc123",
-    "public_endpoint": "https://tn_abc123.tunnel.networkershome.com",
+    "public_endpoint": "https://tn_abc123.21tunnel.com",
     "assigned_port": 0
   }
 }
@@ -381,7 +381,7 @@ wss://tunnel.networkershome.com/ws/agent
 
 **Connect to Realtime Updates**
 ```
-wss://tunnel.networkershome.com/ws/realtime?token=JWT_TOKEN
+wss://21tunnel.com/ws/realtime?token=JWT_TOKEN
 ```
 
 **Events Received**
@@ -460,10 +460,10 @@ JWT_SECRET="your-jwt-secret-key"
 Optional:
 ```bash
 PORT=8080                                           # Default: 8080
-TUNNEL_DOMAIN="tunnel.networkershome.com"          # Default: tunnel.example.com
+TUNNEL_DOMAIN="21tunnel.com"          # Default: tunnel.example.com
 TCP_PORT_MIN=49152                                  # Default: 49152
 TCP_PORT_MAX=65535                                  # Default: 65535
-ALLOWED_ORIGINS="https://tunnel.networkershome.com" # Default: same
+ALLOWED_ORIGINS="https://21tunnel.com" # Default: same
 ```
 
 ### Database Setup
@@ -490,12 +490,12 @@ Tables:
 
 1. **Health Check**
 ```bash
-curl https://tunnel.networkershome.com/api/health
+curl https://21tunnel.com/api/health
 ```
 
 2. **Login as Admin**
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ultraslim.dev",
@@ -506,14 +506,14 @@ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 3. **Get Profile**
 ```bash
 TOKEN="your-token-here"
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 4. **Test Rate Limiting** (Send 11 rapid login attempts)
 ```bash
 for i in {1..11}; do
-  curl -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
   echo ""
@@ -551,7 +551,7 @@ If you get `{"error":"rate limit exceeded"}` on login:
 
 Token expires after 15 minutes. Request a new reset link:
 ```bash
-curl -X POST https://tunnel.networkershome.com/api/auth/forgot-password \
+curl -X POST https://21tunnel.com/api/auth/forgot-password \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev"}'
 ```
@@ -605,7 +605,7 @@ All requests logged to stdout with timestamp and level.
 ### API Documentation
 Full OpenAPI/Swagger docs available at:
 ```
-https://tunnel.networkershome.com/docs
+https://21tunnel.com/docs
 ```
 
 ---

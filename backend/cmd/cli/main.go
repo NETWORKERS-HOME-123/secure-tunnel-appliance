@@ -38,7 +38,7 @@ func configPath() string {
 }
 
 func loadConfig() *CLIConfig {
-	cfg := &CLIConfig{ServerURL: "https://tunnel.networkershome.com"}
+	cfg := &CLIConfig{ServerURL: "https://21tunnel.com"}
 	data, err := os.ReadFile(configPath())
 	if err != nil {
 		return cfg
@@ -94,7 +94,7 @@ Commands:
 
 Examples:
   ultraslim login --email user@example.com --password mypassword
-  ultraslim login --server https://tunnel.networkershome.com
+  ultraslim login --server https://21tunnel.com
   ultraslim connect 3000
   ultraslim connect 8080 --type tcp
   ultraslim connect 22 --type ssh
@@ -105,7 +105,7 @@ func cmdLogin() {
 	fs := flag.NewFlagSet("login", flag.ExitOnError)
 	email := fs.String("email", "", "Account email")
 	password := fs.String("password", "", "Account password")
-	server := fs.String("server", "", "Server URL (e.g., https://tunnel.networkershome.com)")
+	server := fs.String("server", "", "Server URL (e.g., https://21tunnel.com)")
 	apiKey := fs.String("api-key", "", "Use API key instead of email/password")
 	fs.Parse(os.Args[2:])
 

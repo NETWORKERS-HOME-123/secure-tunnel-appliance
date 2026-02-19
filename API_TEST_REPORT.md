@@ -1,7 +1,7 @@
 # UltraSlim API Test Report
 
 **Test Date**: February 19, 2026
-**Test Environment**: Production (https://tunnel.networkershome.com)
+**Test Environment**: Production (https://21tunnel.com)
 **Test Status**: ✅ **ALL TESTS PASSING**
 **Total Tests**: 25
 **Passed**: 25
@@ -34,7 +34,7 @@ Auth Required: No
 Expected Status: 200 OK
 
 Request:
-  curl https://tunnel.networkershome.com/api/health
+  curl https://21tunnel.com/api/health
 
 Response:
   {
@@ -61,7 +61,7 @@ Auth Required: No
 Expected Status: 200 OK
 
 Request:
-  curl https://tunnel.networkershome.com/api/metrics
+  curl https://21tunnel.com/api/metrics
 
 Response:
   {
@@ -91,7 +91,7 @@ Auth Required: No
 Expected Status: 200 OK
 
 Request:
-  curl https://tunnel.networkershome.com/api/alerts
+  curl https://21tunnel.com/api/alerts
 
 Response:
   {
@@ -117,7 +117,7 @@ Auth Required: No
 Expected Status: 200 OK
 
 Request:
-  curl https://tunnel.networkershome.com/api/circuit-breaker/status
+  curl https://21tunnel.com/api/circuit-breaker/status
 
 Response:
   {
@@ -170,7 +170,7 @@ Auth Required: No
 Expected Status: 200 OK
 
 Request:
-  curl -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
 
@@ -200,7 +200,7 @@ Auth Required: No
 Expected Status: 401 Unauthorized
 
 Request:
-  curl -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@ultraslim.dev","password":"WrongPassword"}'
 
@@ -222,7 +222,7 @@ Auth Required: Yes
 Expected Status: 200 OK
 
 Request:
-  curl -X POST https://tunnel.networkershome.com/api/auth/refresh \
+  curl -X POST https://21tunnel.com/api/auth/refresh \
     -H "Authorization: Bearer {TOKEN}"
 
 Response:
@@ -247,7 +247,7 @@ Auth Required: Yes
 Expected Status: 401 Unauthorized
 
 Request:
-  curl https://tunnel.networkershome.com/api/profile
+  curl https://21tunnel.com/api/profile
 
 Response:
   {
@@ -268,7 +268,7 @@ Expected Status: 401 Unauthorized
 
 Request:
   curl -H "Authorization: Bearer invalid_token_xyz" \
-    https://tunnel.networkershome.com/api/profile
+    https://21tunnel.com/api/profile
 
 Response:
   {
@@ -293,7 +293,7 @@ Expected Status: 200 OK
 
 Request:
   curl -H "Authorization: Bearer {TOKEN}" \
-    https://tunnel.networkershome.com/api/profile
+    https://21tunnel.com/api/profile
 
 Response:
   {
@@ -325,7 +325,7 @@ Request:
     -H "Authorization: Bearer {TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{"display_name":"Updated Name"}' \
-    https://tunnel.networkershome.com/api/profile
+    https://21tunnel.com/api/profile
 
 Response:
   {
@@ -417,7 +417,7 @@ Expected Status: 200 OK
 
 Request:
   curl -H "Authorization: Bearer {TOKEN}" \
-    https://tunnel.networkershome.com/api/tunnels
+    https://21tunnel.com/api/tunnels
 
 Response:
   {
@@ -428,7 +428,7 @@ Response:
         "name": "My First Tunnel",
         "type": "http",
         "status": "online",
-        "public_endpoint": "https://tn_550e8400e29b41d4.tunnel.networkershome.com",
+        "public_endpoint": "https://tn_550e8400e29b41d4.21tunnel.com",
         "local_port": 3000,
         "created_at": "2026-02-19T09:00:00Z",
         "updated_at": "2026-02-19T09:30:00Z"
@@ -451,7 +451,7 @@ Expected Status: 200 OK
 
 Request:
   curl -H "Authorization: Bearer {TOKEN}" \
-    https://tunnel.networkershome.com/api/tunnels/tn_550e8400e29b41d4/health
+    https://21tunnel.com/api/tunnels/tn_550e8400e29b41d4/health
 
 Response:
   {
@@ -484,7 +484,7 @@ Request:
     -H "Authorization: Bearer {TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{"name":"test-api-key"}' \
-    https://tunnel.networkershome.com/api/api-keys
+    https://21tunnel.com/api/api-keys
 
 Response:
   {
@@ -510,7 +510,7 @@ Expected Status: 200 OK
 
 Request:
   curl -H "Authorization: Bearer {TOKEN}" \
-    https://tunnel.networkershome.com/api/api-keys
+    https://21tunnel.com/api/api-keys
 
 Response:
   {
@@ -542,11 +542,11 @@ Auth Required: No
 Expected Status: 200 OK
 
 Request:
-  curl -i -H "Origin: https://tunnel.networkershome.com" \
-    https://tunnel.networkershome.com/api/health
+  curl -i -H "Origin: https://21tunnel.com" \
+    https://21tunnel.com/api/health
 
 Response Headers:
-  Access-Control-Allow-Origin: https://tunnel.networkershome.com
+  Access-Control-Allow-Origin: https://21tunnel.com
   Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
   Access-Control-Allow-Headers: Content-Type, Authorization
   Access-Control-Max-Age: 86400
@@ -571,7 +571,7 @@ Request:
   curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"invalid":"json"}' \
-    https://tunnel.networkershome.com/api/auth/login
+    https://21tunnel.com/api/auth/login
 
 Response:
   {
@@ -589,7 +589,7 @@ Endpoint: GET /api/nonexistent
 Expected Status: 404 Not Found
 
 Request:
-  curl https://tunnel.networkershome.com/api/nonexistent
+  curl https://21tunnel.com/api/nonexistent
 
 Response:
   404 Not Found
@@ -608,7 +608,7 @@ Request:
   curl -X POST \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@ultraslim.dev","password":"Test123!"}' \
-    https://tunnel.networkershome.com/api/auth/signup
+    https://21tunnel.com/api/auth/signup
 
 Response:
   {

@@ -30,7 +30,7 @@ This guide provides client-side implementation examples, SDK usage patterns, and
 
 ```bash
 # 1. Login to get JWT token
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ultraslim.dev",
@@ -50,7 +50,7 @@ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 
 # 2. Use token in subsequent requests
 TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -60,7 +60,7 @@ curl https://tunnel.networkershome.com/api/profile \
 TOKEN="your-current-token"
 
 # Get new token before expiry (72 hours)
-curl -X POST https://tunnel.networkershome.com/api/auth/refresh \
+curl -X POST https://21tunnel.com/api/auth/refresh \
   -H "Authorization: Bearer $TOKEN"
 
 # Response:
@@ -78,7 +78,7 @@ curl -X POST https://tunnel.networkershome.com/api/auth/refresh \
 
 ```javascript
 class UltraSlimClient {
-  constructor(baseUrl = 'https://tunnel.networkershome.com') {
+  constructor(baseUrl = 'https://21tunnel.com') {
     this.baseUrl = baseUrl;
     this.token = null;
   }
@@ -175,7 +175,7 @@ import json
 from typing import Optional, Dict, Any
 
 class UltraSlimClient:
-    def __init__(self, base_url='https://tunnel.networkershome.com'):
+    def __init__(self, base_url='https://21tunnel.com'):
         self.base_url = base_url
         self.token = None
         self.session = requests.Session()
@@ -256,7 +256,7 @@ print(json.dumps(profile, indent=2))
 ```bash
 #!/bin/bash
 
-BASE_URL="https://tunnel.networkershome.com"
+BASE_URL="https://21tunnel.com"
 EMAIL="admin@ultraslim.dev"
 PASSWORD="TestPass123!"
 
@@ -363,7 +363,7 @@ curl -s "$BASE_URL/api/circuit-breaker/status" | jq '.'
 
 ### Test Environment
 
-- **API URL**: https://tunnel.networkershome.com
+- **API URL**: https://21tunnel.com
 - **Test Date**: February 19, 2026
 - **Test Tool**: cURL, Python requests
 - **Results**: ✅ All tests passing
@@ -372,7 +372,7 @@ curl -s "$BASE_URL/api/circuit-breaker/status" | jq '.'
 
 ```bash
 # Test: Login with valid credentials
-$ curl -X POST https://tunnel.networkershome.com/api/auth/login \
+$ curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
 
@@ -398,7 +398,7 @@ $ curl -X POST https://tunnel.networkershome.com/api/auth/login \
 $ TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 $ curl -H "Authorization: Bearer $TOKEN" \
-  https://tunnel.networkershome.com/api/profile
+  https://21tunnel.com/api/profile
 
 # Expected Response (200 OK):
 {
@@ -419,7 +419,7 @@ $ curl -H "Authorization: Bearer $TOKEN" \
 
 ```bash
 # Test: Check API health (no auth required)
-$ curl https://tunnel.networkershome.com/api/health
+$ curl https://21tunnel.com/api/health
 
 # Expected Response (200 OK):
 {
@@ -439,7 +439,7 @@ $ curl https://tunnel.networkershome.com/api/health
 
 ```bash
 # Test: Retrieve system metrics
-$ curl https://tunnel.networkershome.com/api/metrics
+$ curl https://21tunnel.com/api/metrics
 
 # Expected Response (200 OK):
 {
@@ -465,7 +465,7 @@ $ curl https://tunnel.networkershome.com/api/metrics
 
 ```bash
 # Test: Retrieve active alerts
-$ curl https://tunnel.networkershome.com/api/alerts
+$ curl https://21tunnel.com/api/alerts
 
 # Expected Response (200 OK):
 {
@@ -481,7 +481,7 @@ $ curl https://tunnel.networkershome.com/api/alerts
 
 ```bash
 # Test: Check circuit breaker health
-$ curl https://tunnel.networkershome.com/api/circuit-breaker/status
+$ curl https://21tunnel.com/api/circuit-breaker/status
 
 # Expected Response (200 OK):
 {
@@ -523,7 +523,7 @@ $ curl https://tunnel.networkershome.com/api/circuit-breaker/status
 # Test: Create API key for programmatic access
 $ TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-$ curl -X POST https://tunnel.networkershome.com/api/api-keys \
+$ curl -X POST https://21tunnel.com/api/api-keys \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"test-key"}'
@@ -548,7 +548,7 @@ $ curl -X POST https://tunnel.networkershome.com/api/api-keys \
 
 $ for i in {1..12}; do
   echo "Request $i:"
-  curl -s -X POST https://tunnel.networkershome.com/api/auth/login \
+  curl -s -X POST https://21tunnel.com/api/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}' \
     -w "Status: %{http_code}\n" | grep -o '"error":"[^"]*"'
@@ -569,7 +569,7 @@ done
 $ TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 $ curl -H "Authorization: Bearer $TOKEN" \
-  https://tunnel.networkershome.com/api/tunnels
+  https://21tunnel.com/api/tunnels
 
 # Expected Response (200 OK):
 {
@@ -580,7 +580,7 @@ $ curl -H "Authorization: Bearer $TOKEN" \
       "name": "My First Tunnel",
       "type": "http",
       "status": "online",
-      "public_endpoint": "https://tn_550e8400e29b41d4.tunnel.networkershome.com",
+      "public_endpoint": "https://tn_550e8400e29b41d4.21tunnel.com",
       "local_port": 3000,
       "created_at": "2026-02-19T09:00:00Z",
       "updated_at": "2026-02-19T09:30:00Z"
@@ -595,7 +595,7 @@ $ curl -H "Authorization: Bearer $TOKEN" \
 
 ```bash
 # Test: Request protected endpoint without token
-$ curl https://tunnel.networkershome.com/api/profile
+$ curl https://21tunnel.com/api/profile
 
 # Expected Response (401 Unauthorized):
 {
@@ -610,7 +610,7 @@ $ curl https://tunnel.networkershome.com/api/profile
 ```bash
 # Test: Request with invalid token
 $ curl -H "Authorization: Bearer invalid_token_xyz" \
-  https://tunnel.networkershome.com/api/profile
+  https://21tunnel.com/api/profile
 
 # Expected Response (401 Unauthorized):
 {
@@ -624,11 +624,11 @@ $ curl -H "Authorization: Bearer invalid_token_xyz" \
 
 ```bash
 # Test: Verify CORS headers
-$ curl -i https://tunnel.networkershome.com/api/health \
-  -H "Origin: https://tunnel.networkershome.com"
+$ curl -i https://21tunnel.com/api/health \
+  -H "Origin: https://21tunnel.com"
 
 # Expected Response Headers (200 OK):
-Access-Control-Allow-Origin: https://tunnel.networkershome.com
+Access-Control-Allow-Origin: https://21tunnel.com
 Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 Access-Control-Allow-Headers: Content-Type, Authorization
 
@@ -688,7 +688,7 @@ or
 // JavaScript
 async function apiCall(endpoint, token) {
   try {
-    const response = await fetch(`https://tunnel.networkershome.com${endpoint}`, {
+    const response = await fetch(`https://21tunnel.com${endpoint}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -743,7 +743,7 @@ async function retryWithBackoff(endpoint, token, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(
-        `https://tunnel.networkershome.com${endpoint}`,
+        `https://21tunnel.com${endpoint}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
@@ -925,7 +925,7 @@ app.post('/webhooks/ultraslim', (req, res) => {
 - **API Documentation**: [SETUP_GUIDE.md](SETUP_GUIDE.md)
 - **Quick Start**: [QUICK_START.md](QUICK_START.md)
 - **Phase 2 Features**: [PHASE2_ENHANCEMENTS.md](PHASE2_ENHANCEMENTS.md)
-- **Live Demo**: https://tunnel.networkershome.com
+- **Live Demo**: https://21tunnel.com
 - **Repository**: https://github.com/vikasswaminh/tunnel-buddy-appliance
 
 ---

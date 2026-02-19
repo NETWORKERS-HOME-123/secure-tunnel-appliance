@@ -10,12 +10,12 @@ UltraSlim is an ngrok-style self-hosted secure tunneling platform that allows yo
 
 ## 🚀 Quick Start
 
-**Production Live**: https://tunnel.networkershome.com
+**Production Live**: https://21tunnel.com
 
 **Test Now:**
 ```bash
 # Login and get token
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@ultraslim.dev",
@@ -23,7 +23,7 @@ curl -X POST https://tunnel.networkershome.com/api/auth/login \
   }'
 
 # Use token for API calls
-curl https://tunnel.networkershome.com/api/profile \
+curl https://21tunnel.com/api/profile \
   -H "Authorization: Bearer TOKEN_HERE"
 ```
 
@@ -325,12 +325,12 @@ User:   user@ultraslim.dev / TestPass123!
 
 ### API Documentation
 ```
-https://tunnel.networkershome.com/docs
+https://21tunnel.com/docs
 ```
 
 ### Monitoring
 ```
-Health: https://tunnel.networkershome.com/api/health
+Health: https://21tunnel.com/api/health
 Metrics: Dashboard available at main URL
 ```
 
@@ -354,7 +354,7 @@ UltraSlim is open source and available under the MIT License.
 
 **Production Status**: ✅ **READY**
 
-- Live at: https://tunnel.networkershome.com
+- Live at: https://21tunnel.com
 - Test Accounts: Ready
 - API Endpoints: All 31 tested & working
 - Security: Phase 1 hardening complete
@@ -371,18 +371,18 @@ UltraSlim is open source and available under the MIT License.
 
 ```bash
 # Login
-curl -X POST https://tunnel.networkershome.com/api/auth/login \
+curl -X POST https://21tunnel.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@ultraslim.dev","password":"TestPass123!"}'
 
 # Check health
-curl https://tunnel.networkershome.com/api/health
+curl https://21tunnel.com/api/health
 
 # View API docs
-open https://tunnel.networkershome.com/docs
+open https://21tunnel.com/docs
 
 # View dashboard
-open https://tunnel.networkershome.com
+open https://21tunnel.com
 ```
 
 ---

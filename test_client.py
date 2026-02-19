@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Real API Client Testing Script
-Tests against live production API at https://tunnel.networkershome.com
+Tests against live production API at https://21tunnel.com
 """
 
 import requests
@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 class APITestClient:
-    def __init__(self, base_url='https://tunnel.networkershome.com'):
+    def __init__(self, base_url='https://21tunnel.com'):
         self.base_url = base_url
         self.token = None
         self.session = requests.Session()
@@ -323,7 +323,7 @@ class APITestClient:
     def test_cors_headers(self) -> bool:
         """Test CORS headers"""
         try:
-            headers = {'Origin': 'https://tunnel.networkershome.com'}
+            headers = {'Origin': 'https://21tunnel.com'}
             response = self.session.get(
                 f'{self.base_url}/api/health',
                 headers=headers

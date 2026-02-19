@@ -177,7 +177,7 @@ admin_id = admin_profile.get("id", "")
 tunnel_id_str = "tn_testfake"
 insert_sql = f"""
 INSERT INTO tunnels (user_id, tunnel_id, type, local_port, public_endpoint, status, bytes_in, bytes_out, connections, assigned_port)
-VALUES ('{admin_id}', '{tunnel_id_str}', 'http', 3000, 'https://{tunnel_id_str}.tunnel.networkershome.com', 'offline', 0, 0, 0, 0)
+VALUES ('{admin_id}', '{tunnel_id_str}', 'http', 3000, 'https://{tunnel_id_str}.21tunnel.com', 'offline', 0, 0, 0, 0)
 RETURNING id;
 """
 try:
@@ -417,7 +417,7 @@ try:
 
     # Test: HTTP tunnel proxy (via Host header to localhost:8081)
     if ws_tunnel_id:
-        host = f"{ws_tunnel_id}.tunnel.networkershome.com"
+        host = f"{ws_tunnel_id}.21tunnel.com"
         try:
             r = subprocess.run(
                 ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",

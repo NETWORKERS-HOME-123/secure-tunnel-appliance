@@ -2,7 +2,7 @@
 
 /**
  * Real API Client Testing Script (Node.js)
- * Tests against live production API at https://tunnel.networkershome.com
+ * Tests against live production API at https://21tunnel.com
  *
  * Usage: node test_client.js
  * Requirements: npm install node-fetch
@@ -11,7 +11,7 @@
 const fetch = typeof window === 'undefined' ? require('node-fetch') : window.fetch;
 
 class APITestClient {
-    constructor(baseUrl = 'https://tunnel.networkershome.com') {
+    constructor(baseUrl = 'https://21tunnel.com') {
         this.baseUrl = baseUrl;
         this.token = null;
         this.testResults = [];
@@ -303,7 +303,7 @@ class APITestClient {
         try {
             const response = await fetch(`${this.baseUrl}/api/health`, {
                 headers: {
-                    'Origin': 'https://tunnel.networkershome.com'
+                    'Origin': 'https://21tunnel.com'
                 }
             });
 
