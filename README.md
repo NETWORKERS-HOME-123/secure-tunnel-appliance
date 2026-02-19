@@ -230,7 +230,26 @@ ALLOWED_ORIGINS="https://example.com"
 
 ## 🧪 Testing
 
-### Unit Tests
+### Client Test Scripts (Production API Testing)
+
+**Windows PowerShell** (Easiest for Windows users - no setup needed)
+```powershell
+powershell -ExecutionPolicy Bypass -File test_client.ps1
+```
+See [WINDOWS_TESTING_GUIDE.md](WINDOWS_TESTING_GUIDE.md) for complete guide.
+
+**Python** (Multi-platform)
+```bash
+python3 test_client.py
+```
+
+**JavaScript/Node.js** (Multi-platform)
+```bash
+npm install node-fetch
+node test_client.js
+```
+
+### Backend Unit Tests
 ```bash
 cd backend
 go test ./...
@@ -242,14 +261,9 @@ cd backend
 go test -tags=integration ./...
 ```
 
-### End-to-End Tests
+### End-to-End Tests (Deployment Verification)
 ```bash
 python3 deploy/test_all.py
-```
-
-### Production Verification
-```bash
-python3 deploy/verify_production.py
 ```
 
 ---
@@ -297,7 +311,9 @@ kubectl port-forward svc/ultraslim 8080:8080
 
 ### Client Implementation & Testing
 - [CLIENT_DEPLOYMENT_GUIDE.md](CLIENT_DEPLOYMENT_GUIDE.md) - **Script locations, client settings, and configuration**
+- [WINDOWS_TESTING_GUIDE.md](WINDOWS_TESTING_GUIDE.md) - **Windows PowerShell test client (no setup required)**
 - [CLIENT_GUIDE.md](CLIENT_GUIDE.md) - JavaScript, Python, and cURL examples
+- [test_client.ps1](test_client.ps1) - **Windows PowerShell test client (12 comprehensive tests)**
 - [test_client.py](test_client.py) - Python test client (12 comprehensive tests)
 - [test_client.js](test_client.js) - Node.js test client (12 comprehensive tests)
 
